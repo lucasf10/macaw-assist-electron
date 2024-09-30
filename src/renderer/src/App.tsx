@@ -4,8 +4,7 @@ import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {
-  const [isRecordingSystem, setIsRecordingSystem] = useState(false);
-  const [isRecordingMic, setIsRecordingMic] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const systemMediaRecorder = useRef<MediaRecorder | null>(null);
   const micMediaRecorder = useRef<MediaRecorder | null>(null);
   const systemStream = useRef<MediaStream | null>(null);
@@ -51,19 +50,6 @@ function App(): JSX.Element {
 
     recorder.current.onstop = async () => {
       try {
-        // To open a dialog on where to save
-        // const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        // const date = new Date();
-        // const dateString = date.toISOString().split('T')[0];
-        // const timeString = date.toTimeString().split(' ')[0].replace(/:/g, '-');
-        // const fileName = `record_${source}_${dateString}_${timeString}.webm`;
-        // const link = document.createElement('a');
-        // link.href = URL.createObjectURL(audioBlob);
-        // link.download = fileName;
-        // document.body.appendChild(link);
-        // link.click();
-        // document.body.removeChild(link);
-
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const arrayBuffer = await audioBlob.arrayBuffer();
 
@@ -91,34 +77,30 @@ function App(): JSX.Element {
   const stopRecordingSystemAudio = () => {
     if (systemStream.current) {
       systemMediaRecorder?.current?.stop();
-      setIsRecordingSystem(false);
-    }
-  }
-
-  const recordSystemAudio = () => {
-    if (!isRecordingSystem && systemStream.current) {
-      setIsRecordingSystem(true);
-      let systemTrack = systemStream.current.getAudioTracks()[0];
-      recordAudio(systemTrack, systemMediaRecorder, 'system');
-    } else {
-      stopRecordingSystemAudio();
     }
   }
 
   const stopRecordingMicAudio = () => {
     if (micStream.current) {
       micMediaRecorder?.current?.stop();
-      setIsRecordingMic(false);
     }
   }
 
-  const recordMicAudio = () => {
-    if (!isRecordingMic && micStream.current) {
-      setIsRecordingMic(true);
-      let micTrack = micStream.current.getAudioTracks()[0];
+  const stopRecordingAudios = () => {
+    setIsRecording(false);
+    stopRecordingMicAudio();
+    stopRecordingSystemAudio();
+  }
+
+  const recordBothAudios = () => {
+    if (!isRecording && micStream.current && systemStream.current) {
+      const micTrack = micStream.current.getAudioTracks()[0];
+      const systemTrack = systemStream.current.getAudioTracks()[0];
       recordAudio(micTrack, micMediaRecorder, 'mic');
+      recordAudio(systemTrack, systemMediaRecorder, 'system');
+      setIsRecording(true);
     } else {
-      stopRecordingMicAudio();
+      stopRecordingAudios();
     }
   }
 
@@ -134,14 +116,9 @@ function App(): JSX.Element {
         Please try pressing <code>F12</code> to open the devTool
       </p>
       <div className="actions">
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={recordMicAudio}>
-            {!isRecordingMic ? 'Record Mic Audio' : 'Stop Recording Mic Audio'}
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={recordSystemAudio}>
-            {!isRecordingSystem ? 'Record System Audio' : 'Stop Recording System Audio'}
+      <div className="action">
+          <a target="_blank" rel="noreferrer" onClick={recordBothAudios}>
+            {!isRecording ? 'Start Recording' : 'Stop Recording'}
           </a>
         </div>
       </div>
